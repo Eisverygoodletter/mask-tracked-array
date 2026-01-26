@@ -114,25 +114,36 @@ pub trait MaskTrackedArray<T>: Default {
     }
     /// Get an iterator over all filled slot indices.
     fn iter_filled_indices(&self) -> impl Iterator<Item = usize>;
+    /// Get an iterator over all filled slot indices also present in the given
+    /// mask.
+    fn iter_filled_indices_mask(&self, mask: Self::MaskType) -> impl Iterator<Item = usize>;
     /// Get an iterator over all unfilled slot indices.
     fn iter_empty_indices(&self) -> impl Iterator<Item = usize>;
     /// Iterate over references to every filled slot.
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
-        T: 'a;
+        T: 'a {
+            self.iter_filled_indices().map(|index| unsafe { self.get_unchecked_ref(index)})
+        }
     /// Iterate over mutable references to every filled slot.
     fn iter_mut<'a>(&'a mut self) -> impl Iterator<Item = &'a mut T>
     where
-        T: 'a;
+        T: 'a {
+            self.iter_filled_indices().map(|index| unsafe { self.get_unchecked_mut(index)})
+        }
     /// Iterate over references which are only present in the given mask.
     fn iter_mask<'a>(&'a self, mask: Self::MaskType) -> impl Iterator<Item = &'a T>
     where
-        T: 'a;
+        T: 'a {
+            self.iter_filled_indices_mask(mask).map(|index| unsafe { self.get_unchecked_ref(index)})
+        }
     /// Iterate over mutable references which are only present in the given
     /// mask.
     fn iter_mut_mask<'a>(&'a mut self, mask: Self::MaskType) -> impl Iterator<Item = &'a mut T>
     where
-        T: 'a;
+        T: 'a {
+            self.iter_filled_indices_mask(mask).map(|index| unsafe { self.get_unchecked_mut(index)})
+        }
     /// Get the internal mask used.
     fn mask(&self) -> Self::MaskType;
 }
@@ -227,24 +238,12 @@ macro_rules! mask_tracked_array_impl {
                 BitIter::from(self.mask.get())
             }
             #[inline]
+            fn iter_filled_indices_mask(&self, mask: Self::MaskType) -> impl Iterator<Item = usize> {
+                BitIter::from(self.mask.get() & mask)
+            }
+            #[inline]
             fn iter_empty_indices(&self) -> impl Iterator<Item = usize> {
                 BitIter::from(!self.mask.get())
-            }
-            #[inline]
-            fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T> where T: 'a {
-                BitIter::from(self.mask.get()).map(|index| unsafe { self.get_unchecked_ref(index) } )
-            }
-            #[inline]
-            fn iter_mut<'a>(&'a mut self) -> impl Iterator<Item = &'a mut T> where T: 'a {
-                BitIter::from(self.mask.get()).map(|index| unsafe { self.get_unchecked_mut(index) } )
-            }
-            #[inline]
-            fn iter_mask<'a>(&'a self, mask: Self::MaskType) -> impl Iterator<Item = &'a T> where T: 'a {
-                BitIter::from(self.mask.get() & mask).map(|index| unsafe { self.get_unchecked_ref(index) } )
-            }
-            #[inline]
-            fn iter_mut_mask<'a>(&'a mut self, mask: Self::MaskType) -> impl Iterator<Item = &'a mut T> where T: 'a {
-                BitIter::from(self.mask.get() & mask).map(|index| unsafe { self.get_unchecked_mut(index) } )
             }
         }
         impl<T> Default for MaskTrackedArrayBase<T, $num_ty, $bits> {
@@ -284,6 +283,17 @@ macro_rules! mask_tracked_array_impl {
                         break;
                     }
                     unsafe { empty.insert_unchecked(index, value) };
+                }
+                empty
+            }
+        }
+        impl<T> core::iter::FromIterator<(usize, T)> for MaskTrackedArrayBase<T, $num_ty, $bits> {
+            fn from_iter<I>(iter: I) -> Self
+                where I: IntoIterator<Item = (usize, T)>
+            {
+                let empty = Self::new();
+                for (index, value) in iter.into_iter() {
+                    let _ = empty.insert(index, value);
                 }
                 empty
             }
