@@ -1,4 +1,5 @@
 #![no_std]
+#![warn(missing_docs)]
 //! A no std and no alloc abstraction for some data structures on
 //! microcontrollers. A [`MaskTrackedArray`] is a
 //! [`UnsafeCell<MaybeUninit<T>>`] with a number mask for tracking which slots
@@ -44,6 +45,7 @@ pub trait MaskTrackedArray<T>: Default {
         self.len() == 0
     }
     /// Construct a new empty instance of this array.
+    #[must_use]
     fn new() -> Self {
         Self::default()
     }
@@ -84,6 +86,10 @@ pub trait MaskTrackedArray<T>: Default {
     /// was already present, that value will be forgotten without running its
     /// drop implementation.
     unsafe fn insert_unchecked(&self, index: usize, value: T);
+    /// Try to insert an item at a given index. If insertion fails, return
+    /// the value in an option. If the option is none then the insertion
+    /// succeeded.
+    #[must_use]
     fn insert(&self, index: usize, value: T) -> Option<T> {
         if self.contains_item_at(index) || index >= Self::MAX_COUNT {
             Some(value)
@@ -308,11 +314,11 @@ macro_rules! mask_tracked_array_impl {
                 #[test]
                 fn hash_equality() {
                     let mask = $alias_ident::new();
-                    mask.insert(0, 0);
-                    mask.insert(1, 1);
+                    assert!(mask.insert(0, 0).is_none());
+                    assert!(mask.insert(1, 1).is_none());
                     let mask_2 = $alias_ident::new();
-                    mask_2.insert(1, 1);
-                    mask_2.insert(0, 0);
+                    assert!(mask_2.insert(1, 1).is_none());
+                    assert!(mask_2.insert(0, 0).is_none());
                     assert_eq!(mask, mask_2);
                     use std::hash::{ Hash, DefaultHasher, Hasher };
                     let mut hasher = DefaultHasher::new();
