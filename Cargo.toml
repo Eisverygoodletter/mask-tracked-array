@@ -7,7 +7,7 @@ license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/Eisverygoodletter/mask-tracked-array"
 description = "A no-std no-alloc bitmask based data structure for embedded usecases"
-keywords = ["data structures", "embedded", "array", "option"]
+keywords = ["data-structures", "embedded", "array", "option"]
 categories = ["no-std::no-alloc", "data-structures", "embedded"]
 
 [dependencies]
