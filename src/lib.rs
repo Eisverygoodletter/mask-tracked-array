@@ -31,7 +31,11 @@ pub mod serde_impl;
 /// [`MaskTrackedArray::MAX_COUNT`] being the size of the slots array.
 pub trait MaskTrackedArray<T>: Default {
     /// The number type used as the mask.
+    #[cfg(not(feature = "num_traits"))]
     type MaskType;
+    /// The number type used as the mask.
+    #[cfg(feature = "num_traits")]
+    type MaskType: num_traits::PrimInt;
     /// The maximum number of elements in the array. Note that this is based
     /// on the number of bits in [`MaskTrackedArray::MaskType`].
     const MAX_COUNT: usize;
