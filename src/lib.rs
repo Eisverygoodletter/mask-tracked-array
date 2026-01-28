@@ -29,7 +29,7 @@ pub mod serde_impl;
 /// Implemented by every variant of the mask tracked array. The
 /// [`MaskTrackedArray::MaskType`] is the number type used for the mask with
 /// [`MaskTrackedArray::MAX_COUNT`] being the size of the slots array.
-pub trait MaskTrackedArray<T>: Default {
+pub trait MaskTrackedArray<T>: Default + FromIterator<T> + FromIterator<(usize, T)> {
     /// The number type used as the mask.
     #[cfg(not(feature = "num_traits"))]
     type MaskType;
@@ -126,28 +126,36 @@ pub trait MaskTrackedArray<T>: Default {
     /// Iterate over references to every filled slot.
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
-        T: 'a {
-            self.iter_filled_indices().map(|index| unsafe { self.get_unchecked_ref(index)})
-        }
+        T: 'a,
+    {
+        self.iter_filled_indices()
+            .map(|index| unsafe { self.get_unchecked_ref(index) })
+    }
     /// Iterate over mutable references to every filled slot.
     fn iter_mut<'a>(&'a mut self) -> impl Iterator<Item = &'a mut T>
     where
-        T: 'a {
-            self.iter_filled_indices().map(|index| unsafe { self.get_unchecked_mut(index)})
-        }
+        T: 'a,
+    {
+        self.iter_filled_indices()
+            .map(|index| unsafe { self.get_unchecked_mut(index) })
+    }
     /// Iterate over references which are only present in the given mask.
     fn iter_mask<'a>(&'a self, mask: Self::MaskType) -> impl Iterator<Item = &'a T>
     where
-        T: 'a {
-            self.iter_filled_indices_mask(mask).map(|index| unsafe { self.get_unchecked_ref(index)})
-        }
+        T: 'a,
+    {
+        self.iter_filled_indices_mask(mask)
+            .map(|index| unsafe { self.get_unchecked_ref(index) })
+    }
     /// Iterate over mutable references which are only present in the given
     /// mask.
     fn iter_mut_mask<'a>(&'a mut self, mask: Self::MaskType) -> impl Iterator<Item = &'a mut T>
     where
-        T: 'a {
-            self.iter_filled_indices_mask(mask).map(|index| unsafe { self.get_unchecked_mut(index)})
-        }
+        T: 'a,
+    {
+        self.iter_filled_indices_mask(mask)
+            .map(|index| unsafe { self.get_unchecked_mut(index) })
+    }
     /// Get the internal mask used.
     fn mask(&self) -> Self::MaskType;
 }

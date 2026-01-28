@@ -1,16 +1,12 @@
 //! [`serde::Serialize`] and [`serde::Deserialize`] implementations.
 use super::{
-    MaskTrackedArrayU8,
-    MaskTrackedArrayU16,
-    MaskTrackedArrayU32,
-    MaskTrackedArrayU64,
-    MaskTrackedArrayU128,
-    MaskTrackedArray
+    MaskTrackedArray, MaskTrackedArrayU8, MaskTrackedArrayU16, MaskTrackedArrayU32,
+    MaskTrackedArrayU64, MaskTrackedArrayU128,
 };
 use core::marker::PhantomData;
 use serde::Deserializer;
-use serde::de::{ Visitor, MapAccess, Unexpected };
-use serde::ser::{ SerializeMap };
+use serde::de::{MapAccess, Unexpected, Visitor};
+use serde::ser::SerializeMap;
 /// Generates implementations of [`serde::Serialize`] and [`serde::Deserialize`].
 macro_rules! mask_tracked_array_serde_impl {
     () => {};
