@@ -160,13 +160,15 @@ pub trait MaskTrackedArray<T>: Default + FromIterator<T> + FromIterator<(usize, 
     fn mask(&self) -> Self::MaskType;
     /// Try to push a value into the lowest indexed position possible. Returns
     /// the value if failed.
-    #[must_use]
-    fn push(&mut self, value: T) -> Option<T> {
+    fn push(&mut self, value: T) -> Result<usize, T> {
         if let Some(smallest) = self.iter_empty_indices().next() {
-            self.insert(smallest, value)
-        }
-        else {
-            Some(value)
+            if let Some(failure) = self.insert(smallest, value) {
+                Err(failure)
+            } else {
+                Ok(smallest)
+            }
+        } else {
+            Err(value)
         }
     }
 }
@@ -465,12 +467,18 @@ macro_rules! mask_tracked_array_impl {
                 #[test]
                 fn pushing() {
                     let mut array: $alias_ident<u8> = $alias_ident::new();
-                    assert!(array.push(1).is_none());
-                    assert!(array.push(2).is_none());
-                    assert!(array.push(3).is_none());
+                    assert_eq!(Ok(0), array.push(1));
+                    assert_eq!(Ok(1), array.push(2));
+                    assert_eq!(Ok(2), array.push(3));
                     assert_eq!(Some(&1), array.get_ref(0));
                     assert_eq!(Some(&2), array.get_ref(1));
                     assert_eq!(Some(&3), array.get_ref(2));
+                }
+                #[test]
+                fn pushing_maxed_out() {
+                    let mut full_array = $alias_ident::from_iter([0u8; $bits]);
+                    assert_eq!(Err(1), full_array.push(1));
+                    assert!(full_array.iter().all(|v| *v == 0));
                 }
             }
         }
