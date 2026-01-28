@@ -158,6 +158,17 @@ pub trait MaskTrackedArray<T>: Default + FromIterator<T> + FromIterator<(usize, 
     }
     /// Get the internal mask used.
     fn mask(&self) -> Self::MaskType;
+    /// Try to push a value into the lowest indexed position possible. Returns
+    /// the value if failed.
+    #[must_use]
+    fn push(&mut self, value: T) -> Option<T> {
+        if let Some(smallest) = self.iter_empty_indices().next() {
+            self.insert(smallest, value)
+        }
+        else {
+            Some(value)
+        }
+    }
 }
 
 /// An array with slots for values backed by a mask for tracking which slots
@@ -450,6 +461,16 @@ macro_rules! mask_tracked_array_impl {
                     let array: $alias_ident<u8> = $alias_ident::new();
                     assert!(array.is_empty());
                     assert_eq!(0, array.len());
+                }
+                #[test]
+                fn pushing() {
+                    let mut array: $alias_ident<u8> = $alias_ident::new();
+                    assert!(array.push(1).is_none());
+                    assert!(array.push(2).is_none());
+                    assert!(array.push(3).is_none());
+                    assert_eq!(Some(&1), array.get_ref(0));
+                    assert_eq!(Some(&2), array.get_ref(1));
+                    assert_eq!(Some(&3), array.get_ref(2));
                 }
             }
         }
