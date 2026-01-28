@@ -35,7 +35,11 @@ pub trait MaskTrackedArray<T>: Default + FromIterator<T> + FromIterator<(usize, 
     type MaskType;
     /// The number type used as the mask.
     #[cfg(feature = "num_traits")]
-    type MaskType: num_traits::PrimInt;
+    type MaskType: num_traits::PrimInt
+        + num_traits::ConstZero
+        + num_traits::ConstOne
+        + num_traits::Bounded
+        + num_traits::Euclid;
     /// The maximum number of elements in the array. Note that this is based
     /// on the number of bits in [`MaskTrackedArray::MaskType`].
     const MAX_COUNT: usize;
