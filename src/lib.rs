@@ -22,40 +22,18 @@ use core::{cell::UnsafeCell, mem::MaybeUninit};
 
 use bit_iter::BitIter;
 
+mod mask_trait;
 #[cfg(feature = "serde")]
 #[doc(hidden)]
 pub mod serde_impl;
+pub use mask_trait::Mask;
 
 /// Implemented by every variant of the mask tracked array. The
 /// [`MaskTrackedArray::MaskType`] is the number type used for the mask with
 /// [`MaskTrackedArray::MAX_COUNT`] being the size of the slots array.
 pub trait MaskTrackedArray<T>: Default + FromIterator<T> + FromIterator<(usize, T)> {
     /// The number type used as the mask.
-    #[cfg(all(not(feature = "num_traits"), not(feature = "serde")))]
-    type MaskType;
-    /// The number type used as the mask.
-    #[cfg(all(feature = "num_traits", not(feature = "serde")))]
-    type MaskType: num_traits::PrimInt
-        + num_traits::ConstZero
-        + num_traits::ConstOne
-        + num_traits::Bounded
-        + num_traits::Euclid;
-    /// The number type used as the mask.
-    #[cfg(all(not(feature = "num_traits"), feature = "serde"))]
-    type MaskType: serde::Serialize + for<'de> serde::Deserialize<'de>;
-    /// The number type used as the mask.
-    #[cfg(all(feature = "num_traits", feature = "serde"))]
-    type MaskType: serde::Serialize
-        + for<'de> serde::Deserialize<'de>
-        + num_traits::PrimInt
-        + num_traits::ConstZero
-        + num_traits::ConstOne
-        + num_traits::Bounded
-        + num_traits::Euclid;
-
-    /// The maximum number of elements in the array. Note that this is based
-    /// on the number of bits in [`MaskTrackedArray::MaskType`].
-    const MAX_COUNT: usize;
+    type MaskType: Mask;
     /// Check if there is an item at a slot. This function will also return
     /// false if the index is out of range.
     fn contains_item_at(&self, index: usize) -> bool;
@@ -112,7 +90,7 @@ pub trait MaskTrackedArray<T>: Default + FromIterator<T> + FromIterator<(usize, 
     /// succeeded.
     #[must_use]
     fn insert(&self, index: usize, value: T) -> Option<T> {
-        if self.contains_item_at(index) || index >= Self::MAX_COUNT {
+        if self.contains_item_at(index) || index >= Self::MaskType::MAX_SELECTIONS as usize {
             Some(value)
         } else {
             unsafe { self.insert_unchecked(index, value) };
@@ -229,10 +207,8 @@ macro_rules! mask_tracked_array_impl {
         #[doc = stringify!(A $num_ty tracked array which can hold $bits items) ]
         pub type $alias_ident<T> = MaskTrackedArrayBase<T, $num_ty, $bits>;
         impl<T> MaskTrackedArray<T> for MaskTrackedArrayBase<T, $num_ty, $bits> {
-            type MaskType = $num_ty;
-            const MAX_COUNT: usize = $bits;
-            fn contains_item_at(&self, index: usize) -> bool {
-                if index >= $bits {
+            type MaskType = $num_ty;            fn contains_item_at(&self, index: usize) -> bool {
+                if index >= <$num_ty>::BITS as usize {
                     return false;
                 }
                 self.mask.get() & (1 << index) != 0
