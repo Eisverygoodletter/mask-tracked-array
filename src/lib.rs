@@ -29,8 +29,7 @@ pub mod serde_impl;
 pub use mask_trait::Mask;
 
 /// Implemented by every variant of the mask tracked array. The
-/// [`MaskTrackedArray::MaskType`] is the number type used for the mask with
-/// [`MaskTrackedArray::MAX_COUNT`] being the size of the slots array.
+/// [`MaskTrackedArray::MaskType`] is the number type used for the mask.
 pub trait MaskTrackedArray<T>: Default + FromIterator<T> + FromIterator<(usize, T)> {
     /// The number type used as the mask.
     type MaskType: Mask;
