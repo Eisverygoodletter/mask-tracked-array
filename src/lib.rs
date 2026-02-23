@@ -157,11 +157,10 @@ pub trait MaskTrackedArray<T>: Default + FromIterator<T> + FromIterator<(usize, 
     /// the value if failed.
     fn push(&mut self, value: T) -> Result<usize, T> {
         if let Some(smallest) = self.iter_empty_indices().next() {
-            if let Some(failure) = self.insert(smallest, value) {
-                Err(failure)
-            } else {
-                Ok(smallest)
-            }
+            let None = self.insert(smallest, value) else {
+                unreachable!()
+            };
+            Ok(smallest)
         } else {
             Err(value)
         }
@@ -472,6 +471,27 @@ macro_rules! mask_tracked_array_impl {
                     let mut full_array = $alias_ident::from_iter([0u8; $bits]);
                     assert_eq!(Err(1), full_array.push(1));
                     assert!(full_array.iter().all(|v| *v == 0));
+                }
+                #[test]
+                fn successful_insertions() {
+                    let array = $alias_ident::new();
+                    assert_eq!(None, array.insert(0, 1));
+                    assert_eq!(None, array.insert(1, 1));
+                    assert!(array.contains_item_at(0));
+                    assert_eq!(Some(1), array.insert(0, 1));
+                    assert_eq!(0b11, array.mask());
+                }
+                #[test]
+                fn masked_iteration() {
+                    let mut array = $alias_ident::from_iter([true; $bits]);
+                    assert!(array.iter_mask($num_ty::ALL_SELECTED).all(|b| *b));
+                    assert!(array.iter_mut_mask($num_ty::ALL_SELECTED).all(|b| {*b = false; true}));
+                }
+                #[test]
+                fn from_iter_init() {
+                    let mut array: $alias_ident<u8> = $alias_ident::from_iter([(1, 10)]);
+                    assert_eq!($num_ty::index_to_mask(1), array.mask());
+                    assert_eq!(10, *array.get_mut(1).unwrap());
                 }
             }
         }

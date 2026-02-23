@@ -16,6 +16,7 @@ pub trait Mask:
     /// The number of bits in the mask
     const MAX_SELECTIONS: u32;
     /// Convert an index into an instance of this mask.
+    #[inline]
     fn index_to_mask(index: usize) -> Self {
         Self::ONE_SELECTED << index
     }
@@ -29,8 +30,18 @@ macro_rules! impl_mask_trait {
             const NONE_SELECTED: Self = 0;
             const ONE_SELECTED: Self = 1;
             const MAX_SELECTIONS: u32 = Self::BITS;
+            #[inline]
             fn mask_to_indices(self) -> impl Iterator<Item = usize> {
                 BitIter::from(self)
+            }
+        }
+        paste::paste! {
+            #[test]
+            fn [< correct_inverse_ $t >]() {
+                let mask = $t::index_to_mask(2);
+                let mut iter = mask.mask_to_indices();
+                assert_eq!(iter.next().unwrap(), 2);
+                assert_eq!(iter.next(), None);
             }
         }
     };
